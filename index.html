@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080d18">
+<title>MHD AI</title>
+
+<style>
+:root {
+  --bg: #080d18;
+  --panel: #101a2b;
+  --panel2: #17243a;
+  --text: #f1f5ff;
+  --muted: #9aaac4;
+  --green: #00e5a0;
+  --blue: #3285ff;
+  --border: rgba(255,255,255,.09);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+}
+button, textarea { font: inherit; }
+.app { max-width: 900px; margin: auto; min-height: 100vh; }
+header {
+  height: 70px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0c1423;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.brand { display: flex; align-items: center; gap: 11px; }
+.logo {
+  width: 43px; height: 43px;
+  display: grid; place-items: center;
+  border-radius: 14px;
+  color: #04120f;
+  font-size: 24px; font-weight: 900;
+  background: linear-gradient(135deg,var(--green),var(--blue));
+  box-shadow: 0 0 22px #00e5a033;
+}
+.brand h1 { font-size: 19px; margin: 0; }
+.brand small { color: var(--muted); font-size: 11px; }
+.status { color: var(--green); font-size: 12px; }
+main { padding: 24px 16px 150px; }
+.welcome { text-align: center; padding: 32px 5px 25px; }
+.biglogo {
+  width: 76px; height: 76px; margin: auto auto 18px;
+  border-radius: 25px; display: grid; place-items: center;
+  background: linear-gradient(135deg,var(--green),var(--blue));
+  color: #06131a; font-size: 43px; font-weight: 900;
+  box-shadow: 0 0 50px #3285ff20;
+}
+.welcome h2 { font-size: clamp(25px,6vw,36px); margin: 10px 0; }
+.gradient {
+  background: linear-gradient(90deg,var(--green),#54a8ff);
+  color: transparent; background-clip: text;
+}
+.welcome p { color: var(--muted); line-height: 1.6; }
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 10px; max-width: 570px; margin: 24px auto;
+}
+.card {
+  padding: 15px; text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 15px; background: var(--panel);
+  color: var(--text); cursor: pointer;
+}
+.card:active { transform: scale(.98); }
+.card b { display: block; margin: 8px 0 5px; }
+.card span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+#chat { display: flex; flex-direction: column; gap: 17px; }
+.message { display: flex; gap: 10px; align-items: flex-start; }
+.message.user { flex-direction: row-reverse; }
+.avatar {
+  width: 33px; height: 33px; flex-shrink: 0;
+  display: grid; place-items: center; border-radius: 11px;
+  background: var(--panel2); font-weight: bold;
+}
+.message.ai .avatar { color: var(--green); }
+.bubble {
+  max-width: 85%; padding: 13px 15px; border-radius: 16px;
+  background: var(--panel); border: 1px solid var(--border);
+  line-height: 1.65; overflow-wrap: anywhere; white-space: pre-wrap;
+}
+.message.user .bubble { background: #183458; }
+.bubble a { color: #73bdff; }
+.bubble .sources { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.sources a { display: block; margin: 7px 0; font-size: 13px; }
+.typing { color: var(--muted); font-size: 13px; padding: 12px; }
+.composer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 12px 15px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(transparent,#080d18 18%);
+}
+.composer-inner {
+  max-width: 850px; margin: auto; display: flex; gap: 9px;
+  padding: 9px; border: 1px solid #2c405a;
+  border-radius: 19px; background: #111c2e;
+}
+#question {
+  flex: 1; resize: none; border: 0; outline: none;
+  color: var(--text); background: transparent;
+  padding: 10px; min-height: 42px; max-height: 120px;
+}
+#question::placeholder { color: #8191aa; }
+#send {
+  width: 44px; height: 44px; flex-shrink: 0;
+  border: 0; border-radius: 13px; cursor: pointer;
+  background: linear-gradient(135deg,var(--green),#56a5ff);
+  font-size: 21px; color: #07131a;
+}
+#send:disabled { opacity: .45; }
+.bottom-note { text-align: center; color: #71819b; font-size: 10px; margin-top: 7px; }
+.actions { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+.smallbtn {
+  background: var(--panel2); color: var(--muted);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px 12px; cursor: pointer; font-size: 12px;
+}
+@media(max-width:420px) {
+  main { padding-left: 12px; padding-right: 12px; }
+  .cards { gap: 8px; }
+  .card { padding: 12px; }
+  .bubble { max-width: 88%; }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo">M</div>
+      <div>
+        <h1>MHD AI</h1>
+        <small>Ton assistant intelligent</small>
+      </div>
+    </div>
+    <div class="status">● En ligne</div>
+  </header>
+
+  <main>
+    <section class="welcome" id="welcome">
+      <div class="biglogo">M</div>
+      <h2>Bonjour, <span class="gradient">je suis MHD AI.</span></h2>
+      <p>Je suis prêt à t'aider à apprendre, comprendre,<br>
+      programmer et explorer de nouvelles idées.</p>
+
+      <div class="cards">
+        <button class="card" onclick="suggest('Explique-moi les bases de Python')">
+          🧑‍💻<b>Programmation</b>
+          <span>Apprendre à coder pas à pas.</span>
+        </button>
+        <button class="card" onclick="suggest('Explique-moi les bases de la cybersécurité')">
+          🛡️<b>Cybersécurité</b>
+          <span>Découvrir la sécurité informatique.</span>
+        </button>
+        <button class="card" onclick="suggest('Explique-moi la méthode scientifique')">
+          🔬<b>Sciences</b>
+          <span>Comprendre le monde et ses lois.</span>
+        </button>
+        <button class="card" onclick="suggest('Recherche des informations sur l’intelligence artificielle')">
+          🌐<b>Recherche</b>
+          <span>Explorer des informations en ligne.</span>
+        </button>
+      </div>
+      <div class="actions">
+        <button class="smallbtn" onclick="newChat()">＋ Nouvelle discussion</button>
+        <button class="smallbtn" onclick="clearHistory()">Effacer l'historique</button>
+      </div>
+    </section>
+
+    <section id="chat" aria-live="polite"></section>
+  </main>
+
+  <div class="composer">
+    <div class="composer-inner">
+      <textarea id="question" rows="1" placeholder="Écris ton message à MHD AI…"></textarea>
+      <button id="send" aria-label="Envoyer">➤</button>
+    </div>
+    <div class="bottom-note">Vérifie les informations importantes auprès de sources fiables.</div>
+  </div>
+</div>
+
+<script>
+const chat = document.getElementById("chat");
+const input = document.getElementById("question");
+const sendButton = document.getElementById("send");
+const welcome = document.getElementById("welcome");
+
+let historyMessages = [];
+let busy = false;
+
+try {
+  historyMessages = JSON.parse(localStorage.getItem("mhd_messages") || "[]");
+  if (!Array.isArray(historyMessages)) historyMessages = [];
+} catch (_) {
+  historyMessages = [];
+}
+
+function saveHistory() {
+  try {
+    localStorage.setItem("mhd_messages", JSON.stringify(historyMessages.slice(-60)));
+  } catch (_) {}
+}
+
+function addMessage(role, text, sources = []) {
+  welcome.style.display = "none";
+
+  const row = document.createElement("div");
+  row.className = "message " + (role === "user" ? "user" : "ai");
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = role === "user" ? "👤" : "M";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+
+  if (sources.length) {
+    const box = document.createElement("div");
+    box.className = "sources";
+    const heading = document.createElement("b");
+    heading.textContent = "Sources consultées :";
+    box.appendChild(heading);
+
+    sources.forEach(source => {
+      try {
+        const url = new URL(source.url);
+        if (url.protocol !== "https:" && url.protocol !== "http:") return;
+        const a = document.createElement("a");
+        a.href = url.href;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = source.title || url.hostname;
+        box.appendChild(a);
+      } catch (_) {}
+    });
+    bubble.appendChild(box);
+  }
+
+  row.append(avatar, bubble);
+  chat.appendChild(row);
+  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+}
+
+function showTyping() {
+  const el = document.createElement("div");
+  el.className = "typing";
+  el.id = "typing";
+  el.textContent = "MHD AI réfléchit…";
+  chat.appendChild(el);
+}
+
+function hideTyping() {
+  document.getElementById("typing")?.remove();
+}
+
+function greetAnswer(q) {
+  const s = q.toLowerCase().trim();
+
+  if (/^(salut|bonjour|bonsoir|hello|coucou|yo|hey)\b/.test(s)) {
+    return "Bonjour ! 😊 Bienvenue sur MHD AI. Comment puis-je t'aider aujourd'hui ?";
+  }
+
+  if (/comment vas-tu|ça va|comment tu vas/.test(s)) {
+    return "Merci de demander ! 😊 Je suis prêt à t'aider. Et toi, sur quoi veux-tu travailler ?";
+  }
+
+  if (/qui es-tu|qui es tu|ton nom|présente-toi/.test(s)) {
+    return "Je suis MHD AI, un assistant créé pour aider à apprendre, programmer et rechercher des informations. Cette version fonctionne avec des réponses locales et la recherche Wikipédia ; elle n'est pas encore reliée à un véritable modèle d'IA générative.";
+  }
+
+  if (/merci|je te remercie/.test(s)) {
+    return "Avec plaisir ! 😊 Tu peux me poser une autre question quand tu veux.";
+  }
+
+  if (/^(au revoir|bye|à bientôt)\b/.test(s)) {
+    return "À bientôt ! 👋 Reviens quand tu voudras apprendre quelque chose de nouveau.";
+  }
+
+  return null;
+}
+
+function localAnswer(q) {
+  const s = q.toLowerCase();
+
+  const greeting = greetAnswer(q);
+  if (greeting) return greeting;
+
+  if (/python/.test(s)) {
+    return "Python est un langage de programmation simple à lire et puissant.\n\nExemple :\n\nprint(\"Bonjour MHD AI\")\n\nLa fonction print() affiche un texte. Pour apprendre, commence par les variables, les conditions, les boucles, les fonctions et les listes.";
+  }
+
+  if (/algorithme|algorithmique/.test(s)) {
+    return "Un algorithme est une suite d'étapes logiques permettant de résoudre un problème.\n\nExemple : calculer une somme\n1. Lire A\n2. Lire B\n3. Calculer S = A + B\n4. Afficher S\n\nEn programmation, on traduit ensuite ces étapes dans un langage comme Python.";
+  }
+
+  if (/cybersécurité|cybersecurite|hacker|piratage/.test(s)) {
+    return "La cybersécurité vise à protéger les ordinateurs, les réseaux et les données.\n\nPour bâtir de bonnes bases :\n1. Maîtrise les systèmes Linux.\n2. Apprends les réseaux : IP, DNS, TCP et HTTP.\n3. Étudie Python et les scripts.\n4. Comprends les mots de passe, le chiffrement et les permissions.\n5. Entraîne-toi dans des laboratoires autorisés.\n\nNe teste jamais un système sans autorisation.";
+  }
+
+  if (/intelligence artificielle|\bia\b/.test(s)) {
+    return "L'intelligence artificielle regroupe des techniques permettant aux machines d'effectuer des tâches comme analyser du texte, reconnaître des images ou produire des réponses. Les modèles génératifs apprennent des régularités à partir de données. Cette version de MHD AI ne possède pas encore de modèle génératif connecté.";
+  }
+
+  if (/méthode scientifique|méthode expérimentale/.test(s)) {
+    return "La méthode scientifique consiste à étudier une question de façon rigoureuse :\n\n1. Observer un phénomène.\n2. Formuler une question.\n3. Proposer une hypothèse.\n4. Concevoir une expérience contrôlée.\n5. Recueillir les résultats.\n6. Analyser les données.\n7. Conclure et communiquer les résultats.\n\nUne bonne expérience doit pouvoir être répétée.";
+  }
+
+  if (/html|css|javascript/.test(s)) {
+    return "Les trois technologies ont des rôles différents :\n\n• HTML : structure de la page.\n• CSS : couleurs, disposition et apparence.\n• JavaScript : interactions et logique.\n\nMHD AI utilise les trois dans ce fichier. Pour le moment, ses réponses viennent de règles locales et de la recherche Wikipédia.";
+  }
+
+  return null;
+}
+
+async function searchWikipedia(q) {
+  const url = "https://fr.wikipedia.org/w/api.php?" + new URLSearchParams({
+    action: "query",
+    generator: "search",
+    gsrsearch: q,
+    gsrnamespace: "0",
+    gsrlimit: "5",
+    prop: "extracts|info",
+    exintro: "1",
+    explaintext: "1",
+    exsentences: "4",
+    inprop: "url",
+    format: "json",
+    origin: "*"
+  });
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Recherche indisponible");
+
+  const data = await response.json();
+  const pages = Object.values(data.query?.pages || {})
+    .sort((a, b) => a.index - b.index);
+
+  if (!pages.length) {
+    return {
+      text: "Je n'ai trouvé aucun article correspondant dans Wikipédia en français. Essaie de reformuler ta recherche avec des mots plus précis.",
+      sources: []
+    };
+  }
+
+  const first = pages[0];
+  const sources = pages.map(page => ({
+    title: page.title,
+    url: page.fullurl || "https://fr.wikipedia.org/wiki/" + encodeURIComponent(page.title.replace(/ /g, "_"))
+  }));
+
+  const extract = first.extract || "Aucun résumé n'est disponible pour cet article.";
+  return {
+    text: "Voici ce que j'ai trouvé dans Wikipédia en français sur « " + first.title + " » :\n\n" +
+      extract + "\n\nJe peux rechercher des articles, mais je ne suis pas encore une IA générative : ce résumé provient de Wikipédia. Vérifie les détails dans les sources.",
+    sources
+  };
+}
+
+async function answerQuestion(q) {
+  const local = localAnswer(q);
+  if (local) return { text: local, sources: [] };
+
+  try {
+    return await searchWikipedia(q);
+  } catch (_) {
+    return {
+      text: "Je n'arrive pas à joindre Wikipédia pour le moment. Vérifie ta connexion Internet, puis réessaie. Tu peux aussi me poser une question sur Python, les algorithmes ou la cybersécurité.",
+      sources: []
+    };
+  }
+}
+
+async function ask() {
+  const q = input.value.trim();
+  if (!q || busy) return;
+
+  busy = true;
+  sendButton.disabled = true;
+  input.value = "";
+  input.style.height = "auto";
+
+  historyMessages.push({ role: "user", text: q });
+  addMessage("user", q);
+  saveHistory();
+  showTyping();
+
+  try {
+    const result = await answerQuestion(q);
+    hideTyping();
+    addMessage("ai", result.text, result.sources);
+
+    historyMessages.push({ role: "ai", text: result.text, sources: result.sources });
+    saveHistory();
+  } catch (_) {
+    hideTyping();
+    addMessage("ai", "Une erreur est survenue. Réessaie dans un instant.");
+  } finally {
+    busy = false;
+    sendButton.disabled = false;
+    input.focus();
+  }
+}
+
+function suggest(text) {
+  input.value = text;
+  ask();
+}
+
+function newChat() {
+  chat.innerHTML = "";
+  welcome.style.display = "";
+  input.value = "";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function clearHistory() {
+  if (!confirm("Effacer l'historique enregistré sur cet appareil ?")) return;
+  historyMessages = [];
+  saveHistory();
+  newChat();
+}
+
+function restoreHistory() {
+  if (!historyMessages.length) return;
+
+  welcome.style.display = "none";
+  historyMessages.slice(-60).forEach(m => {
+    addMessage(m.role, m.text, m.sources || []);
+  });
+}
+
+sendButton.addEventListener("click", ask);
+
+input.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    ask();
+  }
+});
+
+input.addEventListener("input", () => {
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 120) + "px";
+});
+
+restoreHistory();
+</script>
+</body>
+</html>
